@@ -18,9 +18,9 @@ def main(request):
     
     if new_articles:
         count = len(new_articles)
-        msg_lines = [f"Found {count} new article(s) on Anthropic Engineering Blog:"]
+        msg_lines = [f"Found {count} new article(s):"]
         for art in new_articles:
-            msg_lines.append(f"- [{art['title']}]({art['url']}) ({art['date']})")
+            msg_lines.append(f"- *{art['source']}*: [{art['title']}]({art['url']}) ({art['date']})")
         
         message = "\n".join(msg_lines)
         logging.info(message)

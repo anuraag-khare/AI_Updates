@@ -1,11 +1,14 @@
-# Anthropic Engineering Blog Scraper
+# Blog Scraper with Notifications
 
-A Python tool that scrapes the [Anthropic Engineering Blog](https://www.anthropic.com/engineering) for new articles and sends notifications via Telegram.
+A Python tool that scrapes the [Anthropic Engineering Blog](https://www.anthropic.com/engineering) and [Google Developers Blog (AI)](https://developers.googleblog.com/search/?technology_categories=AI) for new articles and sends notifications via Telegram.
 
 ## Features
-- Checks for articles published in the last 24 hours.
-- Sends instant Telegram notifications with article title and link.
-- Stateless design (time-based check) for easy deployment.
+- **Multi-Source Scraping**:
+    - **Anthropic Engineering**: HTML scraping.
+    - **Google Developers (AI)**: Hybrid RSS + Sitemap scraping (to handle client-side rendering and missing feed dates).
+- **Smart Freshness Check**: Checks for articles published in the last 24 hours.
+- **Instant Notifications**: Sends Telegram alerts with article title, source, and link.
+- **Stateless**: Time-based check allows for easy, state-free deployment.
 
 ## Setup
 
