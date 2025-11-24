@@ -46,33 +46,7 @@ You can run this script as a scheduled workflow directly on GitHub. No cloud acc
 1.  Push this code to a GitHub repository.
 2.  Go to **Settings > Secrets and variables > Actions**.
 3.  Add `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID` as Repository Secrets.
-4.  Create a file `.github/workflows/daily_scrape.yml`:
-
-    ```yaml
-    name: Daily Scrape
-    on:
-      schedule:
-        - cron: '0 9 * * *' # Runs every day at 09:00 UTC
-      workflow_dispatch: # Allows manual trigger
-
-    jobs:
-      scrape:
-        runs-on: ubuntu-latest
-        steps:
-          - uses: actions/checkout@v3
-          - name: Set up Python
-            uses: actions/setup-python@v4
-            with:
-              python-version: '3.10'
-          - name: Install dependencies
-            run: |
-              pip install -r requirements.txt
-          - name: Run Scraper
-            env:
-              TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-              TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-            run: python main.py
-    ```
+4.  Configure run frequency in .github/workflows/daily_scrape.yml.
 
 ### Option 2: Google Cloud Functions (Free Tier)
 Google Cloud offers 2 million free invocations per month.
