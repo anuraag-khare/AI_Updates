@@ -71,7 +71,8 @@ def check_for_new_articles(lookback_hours=24):
     
     all_new_articles = []
     now = datetime.now(timezone.utc)
-    cutoff_time = now - timedelta(hours=lookback_hours)
+    # Calculate cutoff date (ignoring time)
+    cutoff_date = (now - timedelta(hours=lookback_hours)).date()
 
     for source in SOURCES:
         logging.info(f"Checking {source['name']}...")
@@ -116,7 +117,8 @@ def check_for_new_articles(lookback_hours=24):
                         logging.warning(f"No date found for entry: {title}")
                         continue
 
-                    if pub_date >= cutoff_time:
+                    # Compare dates only (ignore time)
+                    if pub_date.date() >= cutoff_date:
                         logging.info(f"New article found on {source['name']}: {title} ({pub_date})")
                         all_new_articles.append({
                             'source': source['name'],
@@ -184,7 +186,8 @@ def check_for_new_articles(lookback_hours=24):
                     if link and not link.startswith('http'):
                         link = f"{source['base_url']}{link}"
 
-                    if pub_date >= cutoff_time:
+                    # Compare dates only (ignore time)
+                    if pub_date.date() >= cutoff_date:
                         logging.info(f"New article found on {source['name']}: {title} ({date_str})")
                         all_new_articles.append({
                             'source': source['name'],

@@ -6,7 +6,7 @@ A Python tool that scrapes the [Anthropic Engineering Blog](https://www.anthropi
 - **Multi-Source Scraping**:
     - **Anthropic Engineering**: HTML scraping.
     - **Google Developers (AI)**: Hybrid RSS + Sitemap scraping (to handle client-side rendering and missing feed dates).
-- **Smart Freshness Check**: Checks for articles published in the last 24 hours.
+- **Smart Freshness Check**: Checks for articles published since yesterday (date-based comparison, ignores time).
 - **Instant Notifications**: Sends Telegram alerts with article title, source, and link.
 - **Stateless**: Time-based check allows for easy, state-free deployment.
 
