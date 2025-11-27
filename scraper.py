@@ -20,7 +20,7 @@ SOURCES = [
         "type": "html",
         "url": "https://www.anthropic.com/engineering",
         "article_selector": 'a[class*="ArticleList_cardLink"]',
-        "title_selector": "h3",
+        "title_selector": "h3, h2",
         "date_selector": "h3 + div",
         "link_selector": None, # The article element itself is the link
         "base_url": "https://www.anthropic.com"
@@ -148,6 +148,7 @@ def check_for_new_articles(lookback_hours=24):
             logging.info(f"Found {len(articles)} articles on {source['name']}.")
 
             for article in articles:
+                link = None
                 try:
                     # Title
                     title_tag = article.select_one(source['title_selector'])
@@ -162,10 +163,42 @@ def check_for_new_articles(lookback_hours=24):
                     else:
                          date_tag = article.select_one(source['date_selector'])
                     
-                    if not date_tag:
-                        continue
-                    date_str = date_tag.get_text(strip=True)
-                    
+                    if date_tag:
+                        date_str = date_tag.get_text(strip=True)
+                    else:
+                        # Fallback: Fetch detail page if date is missing (e.g. Featured articles)
+                        logging.info(f"Date missing for '{title}', fetching detail page...")
+                        
+                        # Link extraction (needed early for fallback)
+                        if source['link_selector']:
+                            link_tag = article.select_one(source['link_selector'])
+                            link = link_tag.get('href') if link_tag else None
+                        else:
+                            link = article.get('href')
+
+                        if link and not link.startswith('http'):
+                            link = f"{source['base_url']}{link}"
+                            
+                        if not link:
+                            logging.warning(f"Could not find link for date fallback: {title}")
+                            continue
+                            
+                        try:
+                            detail_resp = requests.get(link, timeout=10)
+                            detail_resp.raise_for_status()
+                            detail_soup = BeautifulSoup(detail_resp.content, 'html.parser')
+                            # Try to find date in detail page
+                            # Selector based on debug: p[class*="HeroEngineering_date"]
+                            detail_date_tag = detail_soup.select_one('p[class*="HeroEngineering_date"]')
+                            if detail_date_tag:
+                                date_str = detail_date_tag.get_text(strip=True).replace('Published', '')
+                            else:
+                                logging.warning(f"Could not find date in detail page for: {title}")
+                                continue
+                        except Exception as e:
+                            logging.warning(f"Failed to fetch detail page for {link}: {e}")
+                            continue
+
                     # Parse date
                     try:
                         pub_date = parser.parse(date_str)
@@ -176,15 +209,16 @@ def check_for_new_articles(lookback_hours=24):
                     if pub_date.tzinfo is None:
                         pub_date = pub_date.replace(tzinfo=timezone.utc)
 
-                    # Link
-                    if source['link_selector']:
-                        link_tag = article.select_one(source['link_selector'])
-                        link = link_tag.get('href') if link_tag else None
-                    else:
-                        link = article.get('href')
+                    # Link (if not already extracted)
+                    if not link:
+                        if source['link_selector']:
+                            link_tag = article.select_one(source['link_selector'])
+                            link = link_tag.get('href') if link_tag else None
+                        else:
+                            link = article.get('href')
 
-                    if link and not link.startswith('http'):
-                        link = f"{source['base_url']}{link}"
+                        if link and not link.startswith('http'):
+                            link = f"{source['base_url']}{link}"
 
                     # Compare dates only (ignore time)
                     if pub_date.date() >= cutoff_date:
