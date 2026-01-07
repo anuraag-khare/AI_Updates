@@ -8,13 +8,34 @@ A Python tool that scrapes AI/Engineering blogs for new articles and sends notif
 - [Uber Engineering Blog](https://www.uber.com/en-IN/blog/engineering/)
 
 ## Features
-- **Multi-Source Scraping**:
-    - **Anthropic Engineering**: HTML scraping with BeautifulSoup.
-    - **Google Developers (AI)**: Hybrid RSS + Sitemap scraping (handles client-side rendering and missing feed dates).
+- **Multi-Source Scraping** with robust, change-resistant strategies:
+    - **Anthropic Engineering**: Semantic HTML scraping (uses `<article>` elements + date pattern matching — resilient to CSS class changes).
+    - **Google Developers (AI)**: RSS feed + Sitemap fallback (handles missing feed dates).
     - **Uber Engineering**: Playwright-based scraping (headless browser for JS-rendered content).
 - **Smart Freshness Check**: Checks for articles published since yesterday (date-based comparison, ignores time).
 - **Instant Notifications**: Sends Telegram alerts with article title, source, and link.
 - **Stateless**: Time-based check allows for easy, state-free deployment.
+
+## Robustness Strategy
+
+Web scraping is fragile because websites change their HTML structure frequently. This scraper mitigates that by prioritizing stable data sources:
+
+| Priority | Data Source | Stability | Used For |
+|----------|-------------|-----------|----------|
+| 1 | RSS/Atom Feeds | ⭐⭐⭐⭐⭐ | Google Developers |
+| 2 | Semantic HTML (`<article>`, `<h1>`) | ⭐⭐⭐⭐ | Anthropic (structure) |
+| 3 | Text Pattern Matching | ⭐⭐⭐⭐ | Anthropic (dates like "Nov 24, 2025") |
+| 4 | Meta Tags (`og:title`) | ⭐⭐⭐⭐ | Fallback for titles |
+| 5 | CSS Selectors | ⭐ | Avoid (breaks often) |
+
+**Why this works:**
+- **RSS feeds** are standardized and stable
+- **Semantic HTML** (`<article>`, `<h1>`) is part of HTML5 spec and rarely changes
+- **Date patterns** like "Nov 24, 2025" are human-readable and stable
+- **Meta tags** like `og:title` are SEO-critical (rarely change)
+- **CSS class names** (especially with CSS Modules like `ArticleList-module-scss-module___tpu-a__cardLink`) change on every build — avoid!
+
+**⚠️ Note on Sitemaps:** Sitemap `lastmod` dates indicate when a page was *last modified*, not when it was *originally published*. This scraper uses actual publication dates from the page content.
 
 ## Setup
 
