@@ -1,11 +1,17 @@
 # Blog Scraper with Notifications
 
-A Python tool that scrapes the [Anthropic Engineering Blog](https://www.anthropic.com/engineering) and [Google Developers Blog (AI)](https://developers.googleblog.com/search/?technology_categories=AI) for new articles and sends notifications via Telegram.
+A Python tool that scrapes AI/Engineering blogs for new articles and sends notifications via Telegram.
+
+**Monitored Sources:**
+- [Anthropic Engineering Blog](https://www.anthropic.com/engineering)
+- [Google Developers Blog (AI)](https://developers.googleblog.com/search/?technology_categories=AI)
+- [Uber Engineering Blog](https://www.uber.com/en-IN/blog/engineering/)
 
 ## Features
 - **Multi-Source Scraping**:
-    - **Anthropic Engineering**: HTML scraping.
-    - **Google Developers (AI)**: Hybrid RSS + Sitemap scraping (to handle client-side rendering and missing feed dates).
+    - **Anthropic Engineering**: HTML scraping with BeautifulSoup.
+    - **Google Developers (AI)**: Hybrid RSS + Sitemap scraping (handles client-side rendering and missing feed dates).
+    - **Uber Engineering**: Playwright-based scraping (headless browser for JS-rendered content).
 - **Smart Freshness Check**: Checks for articles published since yesterday (date-based comparison, ignores time).
 - **Instant Notifications**: Sends Telegram alerts with article title, source, and link.
 - **Stateless**: Time-based check allows for easy, state-free deployment.
@@ -19,19 +25,24 @@ A Python tool that scrapes the [Anthropic Engineering Blog](https://www.anthropi
     pip install -r requirements.txt
     ```
 
-2.  **Configure Telegram**:
+2.  **Install Playwright Browser** (required for Uber Engineering):
+    ```bash
+    playwright install chromium
+    ```
+
+3.  **Configure Telegram**:
     - Create a bot via [@BotFather](https://t.me/BotFather) to get your `TELEGRAM_BOT_TOKEN`.
     - Run the helper script to get your `TELEGRAM_CHAT_ID`:
         ```bash
         uv run get_chat_id.py
         ```
-    - Create a `.env` file:
+    - Create a `.env` file with your actual credentials:
         ```bash
-        TELEGRAM_BOT_TOKEN=your_token
-        TELEGRAM_CHAT_ID=your_chat_id
+        TELEGRAM_BOT_TOKEN=123456789:ABCdefGHIjklMNOpqrSTUvwxYZ
+        TELEGRAM_CHAT_ID=987654321
         ```
 
-3.  **Run Locally**:
+4.  **Run Locally**:
     ```bash
     uv run main.py
     ```
@@ -55,8 +66,8 @@ Google Cloud offers 2 million free invocations per month.
 2.  Enable the **Cloud Functions** and **Cloud Build** APIs.
 3.  Deploy the function:
     ```bash
-    gcloud functions deploy anthropic-scraper \
-      --runtime python310 \
+    gcloud functions deploy blog-scraper \
+      --runtime python311 \
       --trigger-http \
       --entry-point main \
       --set-env-vars TELEGRAM_BOT_TOKEN=...,TELEGRAM_CHAT_ID=...

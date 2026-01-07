@@ -7,6 +7,9 @@ import feedparser
 import ssl
 import xml.etree.ElementTree as ET
 
+# Import Playwright scraper module (optional dependency)
+from playwright_scraper import scrape_with_playwright, is_playwright_available
+
 # Workaround for SSL certificate verify failed on some systems
 if hasattr(ssl, '_create_unverified_context'):
     ssl._create_default_https_context = ssl._create_unverified_context
@@ -19,9 +22,9 @@ SOURCES = [
         "name": "Anthropic Engineering",
         "type": "html",
         "url": "https://www.anthropic.com/engineering",
-        "article_selector": 'a[class*="ArticleList_cardLink"]',
-        "title_selector": "h3, h2",
-        "date_selector": "h3 + div",
+        "article_selector": 'a[class*="cardLink"]',
+        "title_selector": "h2, h3",
+        "date_selector": 'div[class*="date"]',
         "link_selector": None, # The article element itself is the link
         "base_url": "https://www.anthropic.com"
     },
@@ -30,6 +33,12 @@ SOURCES = [
         "type": "feed",
         "url": "https://developers.googleblog.com/feeds/posts/default?alt=atom&category=AI",
         "sitemap_url": "https://developers.googleblog.com/sitemap.xml"
+    },
+    {
+        "name": "Uber Engineering",
+        "type": "playwright",  # Requires headless browser (JS-rendered site)
+        "url": "https://www.uber.com/en-IN/blog/engineering/",
+        "base_url": "https://www.uber.com"
     }
 ]
 
@@ -77,7 +86,20 @@ def check_for_new_articles(lookback_hours=24):
     for source in SOURCES:
         logging.info(f"Checking {source['name']}...")
         
-        if source.get('type') == 'feed':
+        if source.get('type') == 'playwright':
+            # Playwright-based scraping for JS-rendered sites
+            if not is_playwright_available():
+                logging.warning(f"Skipping {source['name']}: Playwright not installed")
+                continue
+            
+            try:
+                playwright_articles = scrape_with_playwright(source, cutoff_date)
+                all_new_articles.extend(playwright_articles)
+            except Exception as e:
+                logging.error(f"Playwright scraping failed for {source['name']}: {e}")
+            continue
+        
+        elif source.get('type') == 'feed':
             # Feed Parsing (RSS/Atom) using feedparser
             try:
                 feed = feedparser.parse(source['url'])
@@ -156,12 +178,8 @@ def check_for_new_articles(lookback_hours=24):
                         continue
                     title = title_tag.get_text(strip=True)
 
-                    # Date
-                    if source['name'] == "Anthropic Engineering":
-                         # Special handling for Anthropic's sibling structure
-                         date_tag = title_tag.find_next_sibling('div')
-                    else:
-                         date_tag = article.select_one(source['date_selector'])
+                    # Date - use the date_selector from config
+                    date_tag = article.select_one(source['date_selector'])
                     
                     if date_tag:
                         date_str = date_tag.get_text(strip=True)
@@ -187,11 +205,10 @@ def check_for_new_articles(lookback_hours=24):
                             detail_resp = requests.get(link, timeout=10)
                             detail_resp.raise_for_status()
                             detail_soup = BeautifulSoup(detail_resp.content, 'html.parser')
-                            # Try to find date in detail page
-                            # Selector based on debug: p[class*="HeroEngineering_date"]
-                            detail_date_tag = detail_soup.select_one('p[class*="HeroEngineering_date"]')
+                            # Try to find date in detail page - look for element with "date" in class
+                            detail_date_tag = detail_soup.select_one('[class*="date"]')
                             if detail_date_tag:
-                                date_str = detail_date_tag.get_text(strip=True).replace('Published', '')
+                                date_str = detail_date_tag.get_text(strip=True).replace('Published', '').strip()
                             else:
                                 logging.warning(f"Could not find date in detail page for: {title}")
                                 continue
